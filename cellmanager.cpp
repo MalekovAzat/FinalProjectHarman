@@ -29,6 +29,9 @@ bool CellManager::freeIsEmpty(){
     return m_freeCellList.isEmpty();
 }
 
+bool CellManager::useIsEmpty(){
+    return m_useCellSet.isEmpty();
+}
 
 bool CellManager::selectedIsEmpty(){
     return m_selectedCellSet.isEmpty();
@@ -75,5 +78,16 @@ void CellManager::initTmpList(){
 }
 
 int CellManager::getUniqueVal(){
+    srand(QDateTime::currentDateTime().toTime_t());
+    int randIndexinUseCellList;
+    int tmpCellNum;
 
+    randIndexinUseCellList = rand() % m_tmpList.size();
+    tmpCellNum = m_tmpList.takeAt(randIndexinUseCellList);
+
+    return tmpCellNum;
+}
+
+void CellManager::clearTmpList(){
+    m_tmpList.clear();
 }

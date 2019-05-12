@@ -71,15 +71,6 @@ void Manager::slotRightAnsver(){
      *  пустить сигнал о перезапуске таймера
     */
     m_selCellSum = 0;
-//    QSet<int>::iterator iter = m_selectedCellSet.begin();
-//    QSet<int>::iterator end = m_selectedCellSet.end();
-
-//    while(iter != end){
-//        m_freeCellSet.insert(*iter);
-//        m_useCellSet.remove(*iter);
-//        emit hideCell(*iter);
-//        iter++;
-//    }
 
     int selectedCellIndex;
     while(!p_cellManager->selectedIsEmpty()){
@@ -91,27 +82,17 @@ void Manager::slotRightAnsver(){
 }
 
 void Manager::showCells(int showCellCount){
-//    srand(QDateTime::currentDateTime().toTime_t());
-
-//    int randomCellIndex;
     int numberInView;
 
-//    QList<int> tmpFreeCellList = m_freeCellSet.toList();
+    //нужно использовать уникальные индексы
 
-//    for(int i = 0; i< showCellCount; i++){
-//        randomCellIndex = rand() % tmpFreeCellList.size();
-//        numberInView = tmpFreeCellList.takeAt(randomCellIndex);
-//        m_useCellSet.insert(numberInView);
-//        emit showCell(numberInView);
-//    }
-//    m_freeCellSet = tmpFreeCellList.toSet();
+    p_cellManager->initTmpList();
     for(int i = 0; i< showCellCount; i++){
-        numberInView = p_cellManager->getRandCell();
+        numberInView = p_cellManager->getUniqueVal();
         emit showCell(numberInView);
     }
+    p_cellManager->clearTmpList();
 }
-
-
 
 void Manager::changeGeneralState(){
     /*общая идея:
@@ -177,53 +158,42 @@ void Manager::changeGeneralState(){
 int Manager::getSumFromRandomCells(int count){
     int sum = 0;
     int curCount = 0;
-    int randIndexInUseCellList;
     int tmpCellNum;
-//    QList<int> tmpUseCellList = m_useCellSet.toList();
-//    if (tmpUseCellList.size() > 0 ){
-//        while(curCount < count){
-//            randIndexInUseCellList = rand() % tmpUseCellList.size();
-//            tmpCellNum = tmpUseCellList.takeAt(randIndexInUseCellList);
-//            sum += p_cellList->getValue(tmpCellNum);
-//            curCount++;
-//        }
-//    }
+
+    if(!p_cellManager->useIsEmpty()){
+        p_cellManager->initTmpList();
+        while(curCount < count){
+            tmpCellNum = p_cellManager->getUniqueVal();
+            sum += p_cellList->getValue(tmpCellNum);
+            curCount++;
+        }
+        p_cellManager->clearTmpList();
+    }
 
     return sum;
 }
 
 void Manager::zeroingSum(){
-    QSet<int>::iterator iter = m_selectedCellSet.begin();
-    QSet<int>::iterator end = m_selectedCellSet.end();
     m_selCellSum = 0;
-
-    while(iter!=end){
-        emit changeStateSignal(*iter);
-        iter++;
+    int selectedCellIndex;
+    while(!p_cellManager->selectedIsEmpty()){
+        selectedCellIndex = p_cellManager->getSelectedVal();
+        emit changeStateSignal(selectedCellIndex);
     }
 
-    m_selectedCellSet.clear();
 }
 
 int Manager::showCellWithNewValue(){
     srand(QDateTime::currentDateTime().toTime_t() * rand());
-
-    int randomCellIndex;
     int numberInView;
     int newValue;
-    if(m_freeCellSet.isEmpty()){
-    }
-    QList<int> tmpFreeCellList = m_freeCellSet.toList();
 
     newValue = rand() % (m_maxAddValue - m_minAddValue) + m_minAddValue;
-    randomCellIndex = rand() % tmpFreeCellList.size();
-    numberInView = tmpFreeCellList.takeAt(randomCellIndex);
-    m_useCellSet.insert(numberInView);
-    p_cellList->replace(numberInView, newValue);
-
-    emit showCell(numberInView);
-
-    m_freeCellSet = tmpFreeCellList.toSet();
+    if(!p_cellManager->freeIsEmpty()){
+        numberInView = p_cellManager->takeRandCell();
+       p_cellList->replace(numberInView, newValue);//!+
+       emit showCell(numberInView); //!+
+    }
 
     return newValue;
 }
@@ -233,12 +203,15 @@ void Manager::cellSelected(int pos, int value, bool isSelected){
     if(isSelected){
         //уменьшим сумму
         m_selCellSum -=  value;
-        m_selectedCellSet.remove(pos);//???
+//        m_selectedCellSet.remove(pos);//???
+        p_cellManager->removeFromSelected(pos);
     }
     //в противном случае
     else {
         m_selCellSum += value;
-        m_selectedCellSet.insert(pos);//???
+//        m_selectedCellSet.insert(pos);//???
+        p_cellManager->addToSelected(pos);
+
     }
 
     emit changeStateSignal(pos);

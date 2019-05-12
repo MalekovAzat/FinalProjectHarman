@@ -23,11 +23,17 @@ public:
     void insertToFree(int);//возврат в свободную ячейку
     void addToSelected(int);
     void removeFromSelected(int);
+
     int getSelectedVal();
+
     bool freeIsEmpty();
+    bool useIsEmpty();
+
+
     bool selectedIsEmpty();
     void printFreeCount();
     //методы дял получения уникального набора значений
+
     void initTmpList();
     int getUniqueVal();
     void clearTmpList();
