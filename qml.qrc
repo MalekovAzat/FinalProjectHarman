@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>DisappearNumber.qml</file>
+        <file>GameField.qml</file>
+        <file>EndTimeIndicator.qml</file>
+        <file>MainNumber.qml</file>
+        <file>topWin.qml</file>
+        <file>MyMenu.qml</file>
+        <file>Game.qml</file>
+    </qresource>
+</RCC>

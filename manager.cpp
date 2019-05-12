@@ -1,0 +1,251 @@
+#include "manager.h"
+
+Manager::Manager(QObject* parent):QObject (parent),p_cellList(new ValueList)
+{
+//    m_celectedCellCount = 0;
+
+    m_selCellSum = 0;
+    m_addCellCount = 5;
+    m_visibleCellCount = 0;
+
+    //создание элементов при задании занчения cellCount
+    QObject::connect(this,&Manager::cellCountChanged,this,&Manager::createStartCell);
+    QObject::connect(this,&Manager::signalRightAnswer, this, &Manager::slotRightAnsver);
+}
+
+ValueList* Manager::cellList(){
+    return p_cellList;
+}
+
+int Manager::addCellCount(){
+    return m_addCellCount;
+}
+
+void Manager::setAddCellCount(int newVal){
+    m_addCellCount = newVal;
+    emit addCellCountChanged(m_addCellCount);
+}
+
+int Manager::cellCount(){
+    return m_cellCount;
+}
+
+void Manager::setMinAddVal(int newVal){
+    m_minAddValue = newVal;
+    emit minAddValChanged(m_minAddValue);
+}
+
+void Manager::setMaxAddVal(int newVal){
+    m_maxAddValue = newVal;
+    emit maxAddValChanged(m_maxAddValue);
+}
+
+int Manager::maxAddVal(){
+    return m_maxAddValue;
+}
+
+int Manager::minAddVal(){
+    return m_minAddValue;
+}
+
+void Manager::setCellCount(int newCount){
+    m_cellCount = newCount;
+    emit cellCountChanged( m_cellCount);
+}
+
+void Manager::createStartCell(){
+    qDebug()<<m_cellCount;
+    for (int i = 0;i< m_cellCount;i++) {
+        p_cellList->addElem(i);
+    }
+
+    p_cellManager = new CellManager(nullptr, m_cellCount);
+    p_cellManager->printFreeCount();
+}
+
+void Manager::slotRightAnsver(){
+    /* Что нужно сделать:
+     *  обнулить счетчик суммы
+     *  перетащить ячейки из используемых в свободные
+     *  скрыть элементы
+     *  пустить сигнал о перезапуске таймера
+    */
+    m_selCellSum = 0;
+//    QSet<int>::iterator iter = m_selectedCellSet.begin();
+//    QSet<int>::iterator end = m_selectedCellSet.end();
+
+//    while(iter != end){
+//        m_freeCellSet.insert(*iter);
+//        m_useCellSet.remove(*iter);
+//        emit hideCell(*iter);
+//        iter++;
+//    }
+
+    int selectedCellIndex;
+    while(!p_cellManager->selectedIsEmpty()){
+        selectedCellIndex = p_cellManager->getSelectedVal();
+        p_cellManager->insertToFree(selectedCellIndex);
+        emit hideCell(selectedCellIndex);
+    }
+    emit restartTimer();
+}
+
+void Manager::showCells(int showCellCount){
+//    srand(QDateTime::currentDateTime().toTime_t());
+
+//    int randomCellIndex;
+    int numberInView;
+
+//    QList<int> tmpFreeCellList = m_freeCellSet.toList();
+
+//    for(int i = 0; i< showCellCount; i++){
+//        randomCellIndex = rand() % tmpFreeCellList.size();
+//        numberInView = tmpFreeCellList.takeAt(randomCellIndex);
+//        m_useCellSet.insert(numberInView);
+//        emit showCell(numberInView);
+//    }
+//    m_freeCellSet = tmpFreeCellList.toSet();
+    for(int i = 0; i< showCellCount; i++){
+        numberInView = p_cellManager->getRandCell();
+        emit showCell(numberInView);
+    }
+}
+
+
+
+void Manager::changeGeneralState(){
+    /*общая идея:
+     * есть такие значения:
+     * - максимальное кол-во элементов которое может участвует в сумме (1)
+     * - кол-во элементов которое действительно участвует в сумме (2)
+     * - кол-во элементов с игрового поля которые будут учавствовать в сумме (3)
+     * - кол-во элементов которое есть сейчас на поле (4)
+     * - кол-во элементов которые нужно отобразить(сгенерировать) на игровом поле (5)
+     *  - кол-во элементов без внесения их в сумму суммы(пустышки) (6)
+     * Как их делим:
+     *  Случайное число из диапазона от 2-х до (1) ->
+     *      записываем результат в (2).
+     *  Генерируем случайное число из диапазона от 0 до min( (4) (2) ) ->
+     *      записываем результат в (3).
+     *  В (5) записываем разницу между (2) и (3) ->
+     *      это кол-во элементов которые нужно отобразить и придумать для них числа.
+     *  В (6) запишем разницу между (1) и (5) ->
+     *      это кол-во элементов для добавления на поле но не в сумму.
+     * Как формируется новое значение для целевого числа:
+     *  Все числа геренируются от и до какого то диапазона
+     *  сначала в сумму добавляем числа которые уже есть на игровом поле,
+     *  после генерируюется (5) чисел и так же добавляются в сумму
+     *  получившееся значение становится новым целевым числом которое и
+     *  отобразится на экране
+     * Поялвение элементов на поле:
+     *  добавляем (5) элементов на поле,
+     * а так же добавляем (1) минус (5) элементов(фейковых) на поле
+     */
+    srand(QDateTime::currentDateTime().toTime_t() % rand());
+
+    int countElemInSum;//(2)
+    int countElemInSumFromGameField;//(3)
+    int countNewElemForSum;//(5)
+    int countNewElem;//(6)
+    countElemInSum = rand() % (m_addCellCount - 1) + 2;
+    int min = ( m_visibleCellCount < countElemInSum ? m_visibleCellCount : countElemInSum);
+    countElemInSumFromGameField = (min > 0) ? rand() % min : 0;
+    countNewElemForSum = countElemInSum - countElemInSumFromGameField;
+    countNewElem = m_addCellCount - countNewElemForSum;
+    int newMainSum = 0;
+
+    newMainSum += getSumFromRandomCells(countElemInSumFromGameField);
+
+    for(int i =0; i < countNewElemForSum;i++){
+        newMainSum+=showCellWithNewValue();
+        m_visibleCellCount++;
+    }
+
+    for(int i = 0; i < countNewElem;i++){
+        showCellWithNewValue();
+        m_visibleCellCount++;
+    }
+    m_mainValue = newMainSum;
+
+    qDebug()<<"size useList "<<m_useCellSet.size();
+    qDebug()<<"size freeList "<<m_freeCellSet.size();
+    qDebug()<<"size selectedSet "<<m_selectedCellSet.size();
+
+    emit changeMainValue(newMainSum);
+}
+
+int Manager::getSumFromRandomCells(int count){
+    int sum = 0;
+    int curCount = 0;
+    int randIndexInUseCellList;
+    int tmpCellNum;
+//    QList<int> tmpUseCellList = m_useCellSet.toList();
+//    if (tmpUseCellList.size() > 0 ){
+//        while(curCount < count){
+//            randIndexInUseCellList = rand() % tmpUseCellList.size();
+//            tmpCellNum = tmpUseCellList.takeAt(randIndexInUseCellList);
+//            sum += p_cellList->getValue(tmpCellNum);
+//            curCount++;
+//        }
+//    }
+
+    return sum;
+}
+
+void Manager::zeroingSum(){
+    QSet<int>::iterator iter = m_selectedCellSet.begin();
+    QSet<int>::iterator end = m_selectedCellSet.end();
+    m_selCellSum = 0;
+
+    while(iter!=end){
+        emit changeStateSignal(*iter);
+        iter++;
+    }
+
+    m_selectedCellSet.clear();
+}
+
+int Manager::showCellWithNewValue(){
+    srand(QDateTime::currentDateTime().toTime_t() * rand());
+
+    int randomCellIndex;
+    int numberInView;
+    int newValue;
+    if(m_freeCellSet.isEmpty()){
+    }
+    QList<int> tmpFreeCellList = m_freeCellSet.toList();
+
+    newValue = rand() % (m_maxAddValue - m_minAddValue) + m_minAddValue;
+    randomCellIndex = rand() % tmpFreeCellList.size();
+    numberInView = tmpFreeCellList.takeAt(randomCellIndex);
+    m_useCellSet.insert(numberInView);
+    p_cellList->replace(numberInView, newValue);
+
+    emit showCell(numberInView);
+
+    m_freeCellSet = tmpFreeCellList.toSet();
+
+    return newValue;
+}
+
+void Manager::cellSelected(int pos, int value, bool isSelected){
+    //если элемент уже выбран
+    if(isSelected){
+        //уменьшим сумму
+        m_selCellSum -=  value;
+        m_selectedCellSet.remove(pos);//???
+    }
+    //в противном случае
+    else {
+        m_selCellSum += value;
+        m_selectedCellSet.insert(pos);//???
+    }
+
+    emit changeStateSignal(pos);
+
+    qDebug()<<m_selCellSum<<"|"<<m_mainValue;
+
+    if(m_selCellSum == m_mainValue){
+        emit signalRightAnswer();
+    }
+}
