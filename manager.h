@@ -16,8 +16,6 @@ class Manager:public QObject
     Q_PROPERTY(int maxAddVal READ maxAddVal WRITE setMaxAddVal NOTIFY maxAddValChanged)
     Q_PROPERTY(int minAddVal READ minAddVal WRITE setMinAddVal NOTIFY minAddValChanged)
     Q_PROPERTY(int addCellCount READ addCellCount WRITE setAddCellCount NOTIFY addCellCountChanged)
-//    Q_PROPERTY(int interval READ interval WRITE setInterval NOTIFY intervalChanged)
-//    Q_PROPERTY(int name READ name WRITE setName NOTIFY nameChanged)
 
 public:
     Manager(QObject* parent = nullptr);
@@ -36,6 +34,9 @@ public:
     void setAddCellCount(int newVal);
 
 signals:
+    //конец игры
+    void endGame();
+
     void startCellCountChanged(int);
 
     void signalRightAnswer();
@@ -43,26 +44,25 @@ signals:
     void minAddValChanged(int);
     void addCellCountChanged(int);
 
-    void changeValue(int number,int newValue);
+//    void changeValue(int number,int newValue);
     void changeMainValue(int newMainValue);
     void cellCountChanged(int );
     void cellListChanged();
 
-    void showCell(int cellNum);
-    void hideCell(int cellNum);
+//    void showCell(int cellNum);
+//    void hideCell(int cellNum);
 
-    void changeStateSignal(int cellNum);
+//    void changeStateSignal(int cellNum);
     //для таймера
     void restartTimer();
 public slots:
+
+    void cellClicked(int index);
+
     void zeroingSum();
     void slotRightAnsver();
-        //реагирование на то что был нажат какой то из элементов
-    void cellSelected(int ,int , bool);
-    //показать случайные ячейки
-    void showCells(int);
-    // начальные настройки для отображения всех элементов(возможно не нужно)
 
+    // начальные настройки для отображения всех элементов(возможно не нужно)
     void createStartCell();
 
     //функция которая срабатывает про событии таймера
@@ -101,6 +101,7 @@ private:
     int m_minAddValue;
     int m_maxAddValue;
 
+    //завершение игры
     int showCellWithNewValue();
     int getSumFromRandomCells(int );
 };

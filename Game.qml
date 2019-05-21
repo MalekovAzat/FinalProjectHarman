@@ -16,22 +16,20 @@ Rectangle{
     property alias rowCount: gamefield.rowCount
     property alias maxCellCount: manager.cellCount
 
+    //сигнал о завершении игры
+    signal gameEnd()
+
     Manager{
         id: manager
-//        cellCount: 100
-        onChangeStateSignal: {
-            //посылаем сигнал о том что нужно сменить положение у конкретной ячейки
-            gamefield.changeStateForPos(cellNum);
-        }
-        onShowCell: {
-            gamefield.showElement(cellNum);
-        }
         onChangeMainValue: {
             mainNum.changeValue(newMainValue);
        }
-       onHideCell: {
-            gamefield.hideElement(cellNum);
+
+        onEndGame: {
+            indicator.stop();
+            //показать результаты игры
        }
+
        onRestartTimer: {
            indicator.restart();
            manager.zeroingSum();
@@ -51,14 +49,16 @@ Rectangle{
        }
     }
 
-   GameField{
+    GameField{
        rowCount: 10
        width: root.width
        height: root.height - indicator.height
        model: manager.cellList
        id:gamefield
        anchors.bottom: root.bottom
-       onCellSelected: manager.cellSelected(pos,val,isSelected);
+       onClicked:{
+            manager.cellClicked(index);
+       }
     }
 
     Rectangle{

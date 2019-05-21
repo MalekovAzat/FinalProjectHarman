@@ -7,14 +7,16 @@ Rectangle{
     visible: true
     property bool isVisible : false
     property bool isSelected: false
+
     property int value // значение для ячейки
     property var rectColor: Qt.rgba(Math.random(),Math.random(),Math.random(),1);
     property int defaultTextSize: 25
-
     property int number:0
 
     property alias textSize :currentValueText.font.pixelSize
     property alias textColor : currentValueText.color
+
+    signal clicked(var index)
 
     Text {
         id: currentValueText
@@ -22,6 +24,14 @@ Rectangle{
         text: + parent.value
         font.pixelSize: defaultTextSize
         visible: isVisible
+    }
+
+    MouseArea{
+        id:mouseArea
+        anchors.fill: root
+        onClicked: {
+            root.clicked(root.number)
+        }
     }
 
     states: [

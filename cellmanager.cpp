@@ -12,16 +12,13 @@ int CellManager::takeRandCell(){
 
     int randCellIndex;
     int numberInView;
-
-
-    if(m_freeCellList.size()){
+    if(!m_freeCellList.isEmpty()){
         randCellIndex = rand() % m_freeCellList.size();
         numberInView = m_freeCellList.takeAt(randCellIndex);
         m_useCellSet.insert(numberInView);
 
         return numberInView;
     }
-    emit freeCellEmpty();
     return 0;
 }
 
@@ -39,7 +36,12 @@ bool CellManager::selectedIsEmpty(){
 
 
 void CellManager::printFreeCount(){
-    qDebug()<<m_freeCellList.count();
+    QList<int>::iterator iter = m_freeCellList.begin();
+    QList<int>::iterator end = m_freeCellList.end();
+    while(iter != end){
+        qDebug()<<*iter;
+        iter++;
+    }
 }
 
 void CellManager::insertToFree(int insValue){
@@ -80,10 +82,11 @@ void CellManager::initTmpList(){
 int CellManager::getUniqueVal(){
     srand(QDateTime::currentDateTime().toTime_t());
     int randIndexinUseCellList;
-    int tmpCellNum;
-
-    randIndexinUseCellList = rand() % m_tmpList.size();
-    tmpCellNum = m_tmpList.takeAt(randIndexinUseCellList);
+    int tmpCellNum = -1;
+    if(!m_tmpList.isEmpty()){
+        randIndexinUseCellList = rand() % m_tmpList.size();
+        tmpCellNum = m_tmpList.takeAt(randIndexinUseCellList);
+    }
 
     return tmpCellNum;
 }

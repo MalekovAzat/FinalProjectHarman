@@ -16,6 +16,7 @@ private:
     QSet<int> m_selectedCellSet;
 
     QList<int> m_tmpList;
+
 public:
     CellManager(QObject* parent = nullptr,int cellCount = 0);
     int takeRandCell();//Получение свободной ячейки

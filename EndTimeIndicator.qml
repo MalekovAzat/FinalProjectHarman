@@ -78,6 +78,11 @@ Item {
         currState = "fullWidth";
     }
 
+    function stop(){
+        timer.stop();
+        currState = "zeroWidth";
+    }
+
     function restart(){
         currState = "zeroWidth";
         timer.restart();

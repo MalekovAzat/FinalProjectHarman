@@ -9,7 +9,9 @@ Rectangle {
     color: "blue"
     property int rowCount;
     property alias model: view.model
-    signal cellSelected(var pos,var val,var isSelected)
+
+    //новый
+    signal clicked(var index);
 
     GridView{
         id: view
@@ -19,43 +21,17 @@ Rectangle {
         cellHeight: root.height / rowCount
         cellWidth: root.width / rowCount
         model: gameManager.cellList
-        delegate:  DisappearNumber{
+        delegate: DisappearNumber{
             id:viewDelegate
             value: model.value
             number: index
-            isSelected: false
-            isVisible: false
+            isSelected: model.isSelected
+            isVisible: model.isVisible
             width: view.cellWidth
             height: view.cellHeight
-        }
-
-        MouseArea{
-            anchors.fill: parent
             onClicked: {
-                var target = view.itemAt(mouseX, mouseY);
-                if(target.isVisible){
-                    var tN = target.number;
-                    var tV = target.value;
-                    var tIS = target.isSelected;
-                    root.cellSelected(tN,tV,tIS);
-                }
+                root.clicked(index);
             }
         }
     }
-
-    function changeStateForPos(number){
-        var target = view.contentItem.children[number];
-        target.changeState();
-    }
-
-    function hideElement(number){
-        var target = view.contentItem.children[number];
-        target.setToInvisible();
-    }
-
-    function showElement(number){
-        var target = view.contentItem.children[number];
-        target.setToVisible();
-    }
-
 }

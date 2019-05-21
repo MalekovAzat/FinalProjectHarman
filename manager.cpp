@@ -2,7 +2,6 @@
 
 Manager::Manager(QObject* parent):QObject (parent),p_cellList(new ValueList)
 {
-//    m_celectedCellCount = 0;
 
     m_selCellSum = 0;
     m_addCellCount = 5;
@@ -54,13 +53,11 @@ void Manager::setCellCount(int newCount){
 }
 
 void Manager::createStartCell(){
-    qDebug()<<m_cellCount;
     for (int i = 0;i< m_cellCount;i++) {
-        p_cellList->addElem(i);
+        p_cellList->addElem(i,false,false);
     }
 
     p_cellManager = new CellManager(nullptr, m_cellCount);
-    p_cellManager->printFreeCount();
 }
 
 void Manager::slotRightAnsver(){
@@ -71,27 +68,16 @@ void Manager::slotRightAnsver(){
      *  пустить сигнал о перезапуске таймера
     */
     m_selCellSum = 0;
-
     int selectedCellIndex;
+
     while(!p_cellManager->selectedIsEmpty()){
         selectedCellIndex = p_cellManager->getSelectedVal();
         p_cellManager->insertToFree(selectedCellIndex);
-        emit hideCell(selectedCellIndex);
+        m_visibleCellCount--;
+        p_cellList->replaceVisibleStatus(selectedCellIndex,false);
+        p_cellList->replaceSelectedStatus(selectedCellIndex,false);
     }
     emit restartTimer();
-}
-
-void Manager::showCells(int showCellCount){
-    int numberInView;
-
-    //нужно использовать уникальные индексы
-
-    p_cellManager->initTmpList();
-    for(int i = 0; i< showCellCount; i++){
-        numberInView = p_cellManager->getUniqueVal();
-        emit showCell(numberInView);
-    }
-    p_cellManager->clearTmpList();
 }
 
 void Manager::changeGeneralState(){
@@ -101,7 +87,7 @@ void Manager::changeGeneralState(){
      * - кол-во элементов которое действительно участвует в сумме (2)
      * - кол-во элементов с игрового поля которые будут учавствовать в сумме (3)
      * - кол-во элементов которое есть сейчас на поле (4)
-     * - кол-во элементов которые нужно отобразить(сгенерировать) на игровом поле (5)
+     * - кол-во новых элементов которые учавствуют в сумме(5)
      *  - кол-во элементов без внесения их в сумму суммы(пустышки) (6)
      * Как их делим:
      *  Случайное число из диапазона от 2-х до (1) ->
@@ -122,38 +108,43 @@ void Manager::changeGeneralState(){
      *  добавляем (5) элементов на поле,
      * а так же добавляем (1) минус (5) элементов(фейковых) на поле
      */
-    srand(QDateTime::currentDateTime().toTime_t() % rand());
+    srand(QDateTime::currentDateTime().toTime_t());
 
     int countElemInSum;//(2)
     int countElemInSumFromGameField;//(3)
     int countNewElemForSum;//(5)
     int countNewElem;//(6)
+
     countElemInSum = rand() % (m_addCellCount - 1) + 2;
     int min = ( m_visibleCellCount < countElemInSum ? m_visibleCellCount : countElemInSum);
     countElemInSumFromGameField = (min > 0) ? rand() % min : 0;
     countNewElemForSum = countElemInSum - countElemInSumFromGameField;
     countNewElem = m_addCellCount - countNewElemForSum;
     int newMainSum = 0;
-
     newMainSum += getSumFromRandomCells(countElemInSumFromGameField);
 
     for(int i =0; i < countNewElemForSum;i++){
         newMainSum+=showCellWithNewValue();
+        if(p_cellManager->freeIsEmpty()){
+            //прямо как в мстителях))))
+            emit endGame();
+        }
         m_visibleCellCount++;
     }
 
     for(int i = 0; i < countNewElem;i++){
         showCellWithNewValue();
+        if(p_cellManager->freeIsEmpty()){
+            //прямо как в мстителях))))
+            emit endGame();
+        }
         m_visibleCellCount++;
     }
     m_mainValue = newMainSum;
 
-    qDebug()<<"size useList "<<m_useCellSet.size();
-    qDebug()<<"size freeList "<<m_freeCellSet.size();
-    qDebug()<<"size selectedSet "<<m_selectedCellSet.size();
-
     emit changeMainValue(newMainSum);
 }
+
 
 int Manager::getSumFromRandomCells(int count){
     int sum = 0;
@@ -162,6 +153,7 @@ int Manager::getSumFromRandomCells(int count){
 
     if(!p_cellManager->useIsEmpty()){
         p_cellManager->initTmpList();
+
         while(curCount < count){
             tmpCellNum = p_cellManager->getUniqueVal();
             sum += p_cellList->getValue(tmpCellNum);
@@ -178,9 +170,9 @@ void Manager::zeroingSum(){
     int selectedCellIndex;
     while(!p_cellManager->selectedIsEmpty()){
         selectedCellIndex = p_cellManager->getSelectedVal();
-        emit changeStateSignal(selectedCellIndex);
+        p_cellList->replaceSelectedStatus(selectedCellIndex,false);
+        p_cellList->replaceVisibleStatus(selectedCellIndex,false);
     }
-
 }
 
 int Manager::showCellWithNewValue(){
@@ -191,30 +183,30 @@ int Manager::showCellWithNewValue(){
     newValue = rand() % (m_maxAddValue - m_minAddValue) + m_minAddValue;
     if(!p_cellManager->freeIsEmpty()){
         numberInView = p_cellManager->takeRandCell();
-       p_cellList->replace(numberInView, newValue);//!+
-       emit showCell(numberInView); //!+
+        p_cellList->replaceNumber(numberInView, newValue);//!+
+        p_cellList->replaceVisibleStatus(numberInView,true);
     }
 
     return newValue;
 }
 
-void Manager::cellSelected(int pos, int value, bool isSelected){
-    //если элемент уже выбран
-    if(isSelected){
-        //уменьшим сумму
-        m_selCellSum -=  value;
-//        m_selectedCellSet.remove(pos);//???
-        p_cellManager->removeFromSelected(pos);
+void Manager::cellClicked(int index){
+    if(p_cellList->getIsSelected(index)){
+        m_selCellSum  -= p_cellList->getValue(index);
+        p_cellManager->removeFromSelected(index);
     }
-    //в противном случае
-    else {
-        m_selCellSum += value;
-//        m_selectedCellSet.insert(pos);//???
-        p_cellManager->addToSelected(pos);
-
+    else{
+        m_selCellSum += p_cellList->getValue(index);
+        p_cellManager->addToSelected(index);
     }
+    //изменение положения ячейки
 
-    emit changeStateSignal(pos);
+    if(p_cellList->getIsSelected(index)){
+        p_cellList->replaceSelectedStatus(index,false);
+    }
+    else{
+        p_cellList->replaceSelectedStatus(index,true);
+    }
 
     qDebug()<<m_selCellSum<<"|"<<m_mainValue;
 
